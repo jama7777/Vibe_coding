@@ -1,0 +1,5 @@
+{
+  "name": "Gemini AI Clone",
+  "description": "A high-fidelity clone of a conversational AI interface using the Google Gemini API with streaming responses, markdown support, and chat history.",
+  "requestFramePermissions": []
+}
