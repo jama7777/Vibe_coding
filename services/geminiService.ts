@@ -1,5 +1,5 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
-import { ModelId, Attachment } from "../types";
+import { ModelId, Attachment, GenerationConfig } from "../types";
 
 // Initialize the client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -7,18 +7,25 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export class GeminiService {
   private chat: Chat | null = null;
   private currentModel: string = ModelId.FLASH;
+  private currentConfig: GenerationConfig | undefined;
 
-  constructor(model: string = ModelId.FLASH, systemInstruction?: string) {
+  constructor(model: string = ModelId.FLASH, systemInstruction?: string, config?: GenerationConfig) {
     this.currentModel = model;
-    this.initChat(model, systemInstruction);
+    this.currentConfig = config;
+    this.initChat(model, systemInstruction, config);
   }
 
-  public initChat(model: string, systemInstruction?: string) {
+  public initChat(model: string, systemInstruction?: string, config?: GenerationConfig) {
     this.currentModel = model;
+    this.currentConfig = config;
     this.chat = ai.chats.create({
       model: model,
       config: {
         systemInstruction: systemInstruction,
+        temperature: config?.temperature,
+        topP: config?.topP,
+        topK: config?.topK,
+        maxOutputTokens: config?.maxOutputTokens,
       },
     });
   }
@@ -39,7 +46,6 @@ export class GeminiService {
       // Process attachments
       for (const att of attachments) {
         if (att.type === 'image' || att.type === 'audio') {
-          // Remove data URL prefix if present for the API
           const base64Data = att.data.includes('base64,') 
             ? att.data.split('base64,')[1] 
             : att.data;
@@ -57,19 +63,10 @@ export class GeminiService {
         }
       }
 
-      // Add the main text message
       if (message.trim()) {
         parts.push({ text: message });
       }
 
-      // If no text but we have attachments, we still need a prompt structure in some cases, 
-      // but Gemini handles multimodal parts well. 
-      // If we only have an image, we can just send it.
-      
-      // Use sendMessageStream with parts. 
-      // Note: chat.sendMessageStream takes a string OR a list of parts in 'message' usually, 
-      // but the SDK type definition for `message` in `sendMessageStream` can be string | Part[].
-      
       const resultStream = await this.chat.sendMessageStream({ 
         message: parts.length === 1 && typeof parts[0].text === 'string' 
           ? parts[0].text 
@@ -92,9 +89,5 @@ export class GeminiService {
       console.error("Error sending message:", error);
       throw error;
     }
-  }
-
-  public switchModel(model: string, systemInstruction?: string) {
-    this.initChat(model, systemInstruction);
   }
 }

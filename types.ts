@@ -8,7 +8,7 @@ export interface Attachment {
   type: 'image' | 'text' | 'audio' | 'file';
   mimeType: string;
   name: string;
-  data: string; // Base64 string for images/audio, plain text for text files
+  data: string;
 }
 
 export interface Message {
@@ -21,9 +21,27 @@ export interface Message {
   error?: boolean;
 }
 
+export interface GenerationConfig {
+  temperature: number;
+  topP: number;
+  topK: number;
+  maxOutputTokens: number;
+}
+
 export interface ChatSessionConfig {
   model: string;
   systemInstruction?: string;
+  generationConfig?: GenerationConfig;
+}
+
+export interface SavedPrompt {
+  id: string;
+  name: string;
+  messages: Message[];
+  systemInstruction: string;
+  config: GenerationConfig;
+  modelId: string;
+  updatedAt: number;
 }
 
 export enum ModelId {
